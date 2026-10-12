@@ -1,0 +1,54 @@
+import tensorflow as tf
+from tensorflow.keras import layers, models
+import numpy as np
+import matplotlib.pyplot as plt
+
+(x_train, y_train), (x_test, y_test) =
+tf.keras.datasets.cifar10.load_data()
+x_train = x_train.astype('float32') / 255.0
+x_test = x_test.astype('float32') / 255.0
+num_classes = 10
+y_train = tf.keras.utils.to_categorical(y_train, num_classes)
+y_test = tf.keras.utils.to_categorical(y_test, num_classes)
+
+base_model = tf.keras.applications.MobileNetV2(
+weights='imagenet',
+include_top=False,
+input_shape=(32, 32, 3)
+)
+base_model.trainable = False 
+
+model = models.Sequential([
+base_model,
+layers.GlobalAveragePooling2D(),
+layers.Dense(256, activation='relu'),
+layers.Dropout(0.3),
+layers.Dense(num_classes, activation='softmax')
+])
+# Compile model
+model.compile(optimizer='adam', loss='categorical_crossentropy',
+metrics=['accuracy'])
+
+model.fit(
+x_train, y_train,
+epochs=5,
+batch_size=64,
+validation_data=(x_test, y_test)
+)
+test_loss, test_acc = model.evaluate(x_test, y_test, verbose=2)
+print(f"\nTest accuracy: {test_acc:.4f}")
+
+predictions = model.predict(x_test[:10])
+predicted_classes = np.argmax(predictions, axis=1)
+true_classes = np.argmax(y_test[:10], axis=1)
+class_names = ['airplane','automobile','bird','cat','deer',
+'dog','frog','horse','ship','truck']
+plt.figure(figsize=(12,4))
+for i in range(10):
+ax = plt.subplot(2,5,i+1)
+plt.imshow(x_test[i])
+plt.title(f"P: {class_names[predicted_classes[i]]}\nT:
+{class_names[true_classes[i]]}")
+plt.axis("off")
+plt.tight_layout()
+plt.show()
